@@ -2,6 +2,13 @@
 #include <string>
 #include <unordered_map>
 #include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <unistd.h>
+#include <openssl/sha.h>
+
+#define SHA512_DIGEST_LENGTH 64
+
 
 class User {
     private:
@@ -12,11 +19,9 @@ class User {
                 
             std::cout << "Username: ";
             std::cin >> username;
-            std::cout << "Password: ";
             std::cin.ignore();
-            getline(std::cin, password);
-
-            this->setNameAndPassword(username, password);
+            password = getpass("Password : ");                       //Turn off echo (terminal POSIX) and take input
+            this->setNameAndPassword(username, sha512(password));
         }
         void setNameAndPassword(std::string username, std::string password) {
             this->name = username;
@@ -27,6 +32,18 @@ class User {
         }
         std::string getPassword() {
             return password;
+        }
+
+        //Encrypt password string with sha-512 hash
+        std::string sha512 (const std::string password) {
+            unsigned char encryptedPassword[SHA512_DIGEST_LENGTH] = {0};
+            SHA512 ((const unsigned char*)password.c_str(), password.size(), encryptedPassword);
+            std::stringstream ss;
+            for (int i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+                ss << std::hex << std::setw(2) << std::setfill('0') << (int)encryptedPassword[i];
+
+            }
+            return ss.str();
         }
 };
 
@@ -47,7 +64,7 @@ void handleLogin (const std::unordered_map<std::string, std::string>& dataTable)
 void handleRegister (std::unordered_map<std::string, std::string>& dataTable) {
     User current;
 
-    while (dataTable.find(current.getName()) != dataTable.end()) {
+    while ((dataTable.find(current.getName()) != dataTable.end())) {
         system("clear || cls");
         std::cout << "Username already exists!\nTry again." << std::endl;
         current = *(new User);
